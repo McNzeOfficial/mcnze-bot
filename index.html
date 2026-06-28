@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NZE Bot">
+<link rel="manifest" href="manifest.json">
+<title>MC NZE Tweet Engine</title>
+<style>
+:root{--bg:#000;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#242424;--border:#2f2f2f;--blue:#1d9bf0;--blue-dim:rgba(29,155,240,0.12);--green:#00ba7c;--green-dim:rgba(0,186,124,0.12);--red:#f4212e;--red-dim:rgba(244,33,46,0.12);--gold:#ffd700;--gold-dim:rgba(255,215,0,0.1);--orange:#ff6600;--orange-dim:rgba(255,102,0,0.1);--text:#e7e9ea;--t2:#71767b;--t3:#3f4144;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;overflow-x:hidden}
+
+.topbar{background:rgba(0,0,0,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-av{width:32px;height:32px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
+.brand-name{font-size:15px;font-weight:700}
+.brand-sub{font-size:10px;color:var(--t2);margin-top:1px}
+.live-dot{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--green)}
+.live-dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.tabs{display:flex;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:199}
+.tab{flex:1;padding:12px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--t2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:0.3px;transition:all 0.15s}
+.tab.active{color:var(--text);border-bottom-color:var(--blue)}
+
+.section{display:none;min-height:calc(100vh - 120px)}
+.section.active{display:block}
+.pad{padding:14px 16px}
+
+/* INSTALL BANNER */
+.install-bar{background:linear-gradient(135deg,var(--blue-dim),var(--green-dim));border:1px solid var(--blue);border-radius:var(--r);margin:12px 16px;padding:12px 14px;display:none;align-items:center;gap:10px}
+.install-bar-text{flex:1;font-size:13px;color:var(--blue);line-height:1.4}
+.install-bar-text b{color:var(--text);display:block;font-size:14px;margin-bottom:2px}
+.install-now{background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap}
+.dismiss-x{background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;padding:0 2px}
+
+/* NEWS TAB */
+.news-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-label{font-size:16px;font-weight:700}
+.refresh-pill{display:flex;align-items:center;gap:5px;background:var(--blue-dim);border:1px solid var(--blue);border-radius:20px;color:var(--blue);font-size:12px;font-weight:600;padding:6px 12px;cursor:pointer}
+.refresh-pill:active{opacity:0.7}
+.refresh-pill .spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.source-bar{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
+.source-bar::-webkit-scrollbar{display:none}
+.src-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:none;font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.src-chip.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue)}
+
+.news-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;transition:border-color 0.15s}
+.news-card:active{border-color:var(--blue);background:var(--blue-dim)}
+.nc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.nc-source{font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase}
+.src-punch{color:#e53935}
+.src-vanguard{color:#1565c0}
+.src-bbc{color:#bb1919}
+.src-channels{color:#f57c00}
+.src-guardian{color:#00695c}
+.src-thisday{color:#6a1b9a}
+.src-daily{color:#2e7d32}
+.nc-time{font-size:11px;color:var(--t2)}
+.nc-title{font-size:14px;font-weight:500;line-height:1.5;color:var(--text);margin-bottom:10px}
+.nc-actions{display:flex;gap:8px}
+.nc-gen{background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:700;padding:7px 14px;cursor:pointer;flex:1}
+.nc-gen:active{opacity:0.8}
+.nc-gen-op{background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;padding:7px 10px;cursor:pointer}
+
+.skel{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.skel-line{height:11px;background:var(--s3);border-radius:6px;margin-bottom:8px;animation:shimmer 1.5s ease-in-out infinite}
+@keyframes shimmer{0%,100%{opacity:0.4}50%{opacity:0.8}}
+.skel-line.short{width:40%}
+.skel-line.mid{width:70%}
+
+.news-count{text-align:center;font-size:12px;color:var(--t2);padding:8px;margin-bottom:8px}
+
+/* GENERATE TAB */
+.niche-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px;scrollbar-width:none}
+.niche-scroll::-webkit-scrollbar{display:none}
+.niche-chip{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:none;font-size:13px;font-weight:500;color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.1s}
+.niche-chip.active{background:var(--blue-dim);border-color:var(--blue);color:var(--blue)}
+
+.topic-bar{background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;display:none;align-items:flex-start;gap:10px}
+.topic-bar.show{display:flex}
+.topic-label{flex:1;font-size:12px;color:var(--blue);line-height:1.4}
+.topic-label b{font-size:13px;color:var(--text);display:block;margin-bottom:2px}
+.topic-clear{background:none;border:none;color:var(--t2);font-size:20px;cursor:pointer;flex-shrink:0;margin-top:-2px}
+
+.compose-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.compose-inner{display:flex;gap:10px;margin-bottom:10px}
+.c-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
+textarea{background:none;border:none;color:var(--text);font-size:15px;width:100%;resize:none;outline:none;font-family:inherit;line-height:1.55;min-height:100px}
+textarea::placeholder{color:var(--t3)}
+.compose-foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:10px}
+.char-ring{position:relative;width:30px;height:30px}
+.char-ring svg{transform:rotate(-90deg)}
+.char-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--t2)}
+.foot-btns{display:flex;gap:8px}
+.btn-outline{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer}
+.btn-outline:active{opacity:0.7}
+.btn-blue{background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;padding:7px 16px;cursor:pointer}
+.btn-blue:active{opacity:0.8}
+.btn-blue:disabled{opacity:0.4;cursor:not-allowed}
+
+.gen-main{width:100%;background:var(--blue);border:none;border-radius:var(--r);color:#fff;font-size:15px;font-weight:800;padding:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;letter-spacing:0.3px}
+.gen-main:active{opacity:0.85;transform:scale(0.99)}
+.gen-main:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.batch-main{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);color:var(--text);font-size:14px;font-weight:600;padding:12px;cursor:pointer;margin-bottom:16px}
+.batch-main:active{opacity:0.7}
+.batch-main:disabled{opacity:0.4}
+
+.tone-row{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.tone-row::-webkit-scrollbar{display:none}
+.tone-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:none;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+.tone-chip.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold)}
+
+/* QUEUE TAB */
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.stat-box{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px 8px;text-align:center}
+.stat-n{font-size:22px;font-weight:800;color:var(--blue)}
+.stat-l{font-size:10px;color:var(--t2);margin-top:2px}
+
+.q-item{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:10px}
+.q-text{font-size:14px;line-height:1.55;color:var(--text);margin-bottom:10px;word-break:break-word}
+.q-foot{display:flex;align-items:center;justify-content:space-between}
+.cat-pill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase}
+.cat-political{background:var(--red-dim);color:var(--red)}
+.cat-economy{background:var(--green-dim);color:var(--green)}
+.cat-opinion{background:var(--blue-dim);color:var(--blue)}
+.cat-engagement{background:var(--gold-dim);color:var(--gold)}
+.cat-news{background:var(--orange-dim);color:var(--orange)}
+.cat-random{background:var(--s3);color:var(--t2)}
+.q-btns{display:flex;gap:5px}
+.q-btn{background:var(--s3);border:none;border-radius:7px;color:var(--t2);font-size:11px;font-weight:600;padding:5px 10px;cursor:pointer}
+.q-btn:active{opacity:0.7}
+.q-btn.del{color:var(--red)}
+.empty-q{text-align:center;padding:50px 20px;color:var(--t2);font-size:14px;line-height:1.7}
+.clear-btn{width:100%;background:none;border:1px solid var(--border);border-radius:var(--r);color:var(--t2);font-size:13px;padding:10px;cursor:pointer;margin-bottom:14px}
+
+/* TOAST */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);font-size:13px;font-weight:700;padding:10px 20px;border-radius:20px;opacity:0;transition:all 0.25s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite}
+.spacer{height:24px}
+</style>
+</head>
+<body>
+
+<div id="install-bar" class="install-bar">
+  <div class="install-bar-text"><b>Add to home screen</b>Tap install to use like a normal app</div>
+  <button class="install-now" onclick="installPWA()">Install</button>
+  <button class="dismiss-x" onclick="this.closest('.install-bar').style.display='none'">×</button>
+</div>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-av">MC</div>
+    <div>
+      <div class="brand-name">MC NZE Tweet Engine</div>
+      <div class="brand-sub">Nigerian content powerhouse</div>
+    </div>
+  </div>
+  <div class="live-dot">LIVE</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="goTab('news',this)">📰 News</button>
+  <button class="tab" onclick="goTab('gen',this)">⚡ Generate</button>
+  <button class="tab" onclick="goTab('queue',this)">📋 Queue (<span id="q-count-tab">0</span>)</button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- ===== NEWS TAB ===== -->
+<div id="news" class="section active pad">
+  <div class="news-toolbar">
+    <div>
+      <div class="section-label">Trending now</div>
+      <div style="font-size:11px;color:var(--t2);margin-top:2px" id="last-refresh">Pull latest Nigeria news</div>
+    </div>
+    <button class="refresh-pill" id="refresh-btn" onclick="fetchNews()">
+      <span id="refresh-icon">↻</span> Refresh
+    </button>
+  </div>
+
+  <div class="source-bar" id="source-bar">
+    <button class="src-chip active" onclick="filterSrc(this,'all')">All sources</button>
+    <button class="src-chip" onclick="filterSrc(this,'Punch')">Punch</button>
+    <button class="src-chip" onclick="filterSrc(this,'Vanguard')">Vanguard</button>
+    <button class="src-chip" onclick="filterSrc(this,'BBC Naija')">BBC Naija</button>
+    <button class="src-chip" onclick="filterSrc(this,'Channels')">Channels</button>
+    <button class="src-chip" onclick="filterSrc(this,'Guardian')">Guardian</button>
+    <button class="src-chip" onclick="filterSrc(this,'ThisDay')">ThisDay</button>
+  </div>
+
+  <div id="news-count" class="news-count" style="display:none"></div>
+  <div id="news-list"></div>
+  <div class="spacer"></div>
+</div>
+
+<!-- ===== GENERATE TAB ===== -->
+<div id="gen" class="section pad">
+  <div id="topic-bar" class="topic-bar">
+    <div class="topic-label"><b id="topic-source">News topic</b><span id="topic-text"></span></div>
+    <button class="topic-clear" onclick="clearTopic()">×</button>
+  </div>
+
+  <div class="niche-scroll">
+    <button class="niche-chip active" onclick="setNiche(this,'political')">🔴 Political</button>
+    <button class="niche-chip" onclick="setNiche(this,'economy')">💚 Economy</button>
+    <button class="niche-chip" onclick="setNiche(this,'opinion')">🔥 Hot take</button>
+    <button class="niche-chip" onclick="setNiche(this,'engagement')">💬 Engagement</button>
+    <button class="niche-chip" onclick="setNiche(this,'news')">📰 News update</button>
+    <button class="niche-chip" onclick="setNiche(this,'random')">🎲 Random</button>
+  </div>
+
+  <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:8px;letter-spacing:0.5px;">TONE</div>
+  <div class="tone-row">
+    <button class="tone-chip active" onclick="setTone(this,'sharp')">Sharp</button>
+    <button class="tone-chip" onclick="setTone(this,'outrage')">Outrage</button>
+    <button class="tone-chip" onclick="setTone(this,'analytical')">Analytical</button>
+    <button class="tone-chip" onclick="setTone(this,'sarcastic')">Sarcastic</button>
+    <button class="tone-chip" onclick="setTone(this,'informative')">News update</button>
+    <button class="tone-chip" onclick="setTone(this,'question')">Question</button>
+  </div>
+
+  <div class="compose-wrap">
+    <div class="compose-inner">
+      <div class="c-avatar">MC</div>
+      <textarea id="editor" placeholder="Your tweet appears here — tap Generate to start..." oninput="updateChars()"></textarea>
+    </div>
+    <div class="compose-foot">
+      <div class="char-ring">
+        <svg width="30" height="30" viewBox="0 0 30 30">
+          <circle cx="15" cy="15" r="12" fill="none" stroke="var(--s3)" stroke-width="3"/>
+          <circle id="char-arc" cx="15" cy="15" r="12" fill="none" stroke="var(--blue)" stroke-width="3" stroke-dasharray="75.4" stroke-dashoffset="75.4" stroke-linecap="round"/>
+        </svg>
+        <div class="char-val" id="char-val">0</div>
+      </div>
+      <div class="foot-btns">
+        <button class="btn-outline" onclick="saveOne()">+ Save</button>
+        <button class="btn-outline" onclick="copyEditor()">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="gen-main" id="gen-btn" onclick="generateOne()">
+    <span id="gen-ico">⚡</span> Generate tweet
+  </button>
+  <button class="batch-main" id="batch-btn" onclick="generateBatch()">Generate 10 at once → auto-save all to queue</button>
+  <div class="spacer"></div>
+</div>
+
+<!-- ===== QUEUE TAB ===== -->
+<div id="queue" class="section pad">
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-n" id="sq-total">0</div><div class="stat-l">In queue</div></div>
+    <div class="stat-box"><div class="stat-n" id="sq-gen">0</div><div class="stat-l">Generated</div></div>
+    <div class="stat-box"><div class="stat-n" id="sq-copied">0</div><div class="stat-l">Copied</div></div>
+  </div>
+  <button class="clear-btn" onclick="clearQueue()">Clear all tweets</button>
+  <div id="queue-list"></div>
+  <div class="spacer"></div>
+</div>
+
+<script>
+const PROXIES = [
+  url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+  url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+];
+
+const SOURCES = [
+  { name:'Punch', url:'https://punchng.com/feed/', cls:'src-punch' },
+  { name:'Vanguard', url:'https://www.vanguardngr.com/feed/', cls:'src-vanguard' },
+  { name:'BBC Naija', url:'https://feeds.bbci.co.uk/pidgin/rss.xml', cls:'src-bbc' },
+  { name:'Channels', url:'https://www.channelstv.com/feed/', cls:'src-channels' },
+  { name:'Guardian', url:'https://guardian.ng/feed/', cls:'src-guardian' },
+  { name:'ThisDay', url:'https://www.thisdaylive.com/index.php/feed/', cls:'src-thisday' },
+];
+
+const TWEET_TEMPLATES = {
+  political: {
+    sharp: [
+      h => `${h}. No press conference. No explanation. No accountability. This is Nigeria 2025. #Nigeria #NigerianPolitics`,
+      h => `${h} — and our elected officials have nothing to say about it. The silence is louder than the news. #NaijaTwitter`,
+      h => `${h}. The same people who caused the problem are now managing the solution. Classic Nigeria. #Nigeria`,
+      h => `Here's what they don't want you to focus on: ${h}. Connect the dots yourself. #NigerianPolitics`,
+      h => `${h}. Third time this year. Nobody resigns. Nobody is questioned. Nothing changes. #Nigeria`,
+    ],
+    outrage: [
+      h => `I am TIRED. ${h}. How long are we going to accept this as normal? Nigerians deserve better! #Nigeria`,
+      h => `This is unacceptable. ${h}. If this was your child's school, your family's hospital — would you still be quiet? #NigerianTwitter`,
+      h => `${h}. We are SUFFERING and those in power are comfortable. Enough is enough. #Nigeria`,
+    ],
+    analytical: [
+      h => `Let's break down what "${h}" actually means for ordinary Nigerians. Thread 🧵 #Nigeria`,
+      h => `${h}. Three things this tells us about the direction of this government: (1) priorities are wrong (2) accountability is dead (3) we must demand better. #NigerianPolitics`,
+      h => `Context on "${h}" — this didn't start today. It is the result of years of policy failures. Let me explain. #Nigeria`,
+    ],
+    sarcastic: [
+      h => `"${h}" — Fantastic. Everything is going exactly according to plan. What plan? Exactly. #Nigeria`,
+      h => `${h}. I'm sure the government has a very reasonable explanation. I'm sure we'll hear it any day now. #NaijaTwitter`,
+      h => `${h}. Shocking. Truly shocking. Nobody could have predicted this. Nobody. #Nigeria`,
+    ],
+    informative: [
+      h => `JUST IN: ${h}. Here's what you need to know and how it affects you directly. #NigeriaNews #Nigeria`,
+      h => `UPDATE: ${h}. This is a developing story — watching closely and will share more as it unfolds. #NaijaNews`,
+      h => `Breaking: ${h}. Details emerging — stay with this thread for updates. #NigeriaNews`,
+    ],
+    question: [
+      h => `${h}. My question is simple — who is being held responsible for this? Drop your thoughts. #Nigeria`,
+      h => `${h}. Are Nigerians surprised? Yes or No — answer below. #NigerianTwitter`,
+      h => `${h}. What should the government do about this? Let's have a real conversation. #Nigeria`,
+    ],
+  },
+  economy: {
+    sharp: [
+      h => `${h}. Your business feels it. Your family feels it. Your pocket feels it. The policymakers? Completely insulated. #NigerianEconomy`,
+      h => `${h} — this is what economic mismanagement looks like in real time. Nigerians are not statistics. #NairaWatch`,
+      h => `${h}. Entrepreneurs, traders, market women — everyone is carrying a government they didn't build. #Nigeria`,
+      h => `${h}. Meanwhile the naira keeps bleeding and ordinary people are told to be patient. Patient for what exactly? #CBN`,
+    ],
+    outrage: [
+      h => `${h}. I don't want to hear "it will get better." Better for WHO? Not for Nigerians buying garri at ₦3,000 per paint. #NigerianEconomy`,
+      h => `${h}. Fuel up. Light bill up. School fees up. Rent up. Salary? Same since 2019. This is economic violence. #Nigeria`,
+    ],
+    analytical: [
+      h => `${h}. What this means for you: (1) prices will rise again (2) SMEs will suffer (3) the informal sector takes the hardest hit. Thread 🧵 #NigerianEconomy`,
+      h => `Breaking down "${h}" for people who don't speak economist. In plain Naija terms — your money just got weaker again. #NairaWatch`,
+    ],
+    sarcastic: [
+      h => `${h}. But the economy is growing, they said. We will see the results soon, they said. #Nigeria`,
+      h => `"${h}" — Ah, another great day for the Nigerian economy. Very encouraging. Very. #NigerianEconomy`,
+    ],
+    informative: [
+      h => `ECONOMIC UPDATE: ${h}. Here's what this means for your daily spending power and what to watch next. #NigeriaEconomy`,
+      h => `Market update: ${h}. Traders and business owners — read this carefully. It affects your margins. #NigerianBusiness`,
+    ],
+    question: [
+      h => `${h}. Are you doing better financially today than you were 2 years ago? Be honest. Yes or No. #NigerianEconomy`,
+      h => `${h}. What industry do you think will be most affected? Drop your predictions below. #NigeriaEconomy`,
+    ],
+  },
+  opinion: {
+    sharp: [
+      h => `Unpopular opinion on "${h}" — we keep arguing about the headline and ignoring the story behind the story. #Nigeria`,
+      h => `Hot take: "${h}" is not the real issue. The real issue is the system that keeps producing these headlines. #NaijaTwitter`,
+      h => `"${h}" — and we will tweet, rage for 48 hours, then forget. That's the Nigerian cycle. When does it break? #Nigeria`,
+    ],
+    outrage: [
+      h => `I've said it before and I'll say it again. "${h}" is what happens when we normalize corruption and mediocrity. WAKE UP NIGERIA. #Nigeria`,
+    ],
+    sarcastic: [
+      h => `"${h}" — Bold of them to keep doing this and expecting us to clap. Truly audacious. #Nigeria`,
+      h => `${h}. I mean, what could possibly go wrong? Oh wait. Everything. Everything could go wrong. #NaijaTwitter`,
+    ],
+    analytical: [
+      h => `Let's be rational about "${h}". Three things most people are missing in this conversation. Thread 🧵 #Nigeria`,
+      h => `"${h}" — the surface narrative and the real narrative are two different things. Let me explain. #NigerianTwitter`,
+    ],
+    informative: [
+      h => `Opinion: ${h}. Here's my take and why I think most Nigerians should be paying attention to this. #NaijaOpinion`,
+    ],
+    question: [
+      h => `${h}. Unpopular question — are WE also part of the problem? Drop your honest thoughts. #Nigeria`,
+      h => `${h}. If you could change one thing about how Nigeria responds to situations like this, what would it be? #NigerianTwitter`,
+    ],
+  },
+  engagement: {
+    sharp: [
+      h => `${h}. Name ONE person who should be held responsible for this. Just one. #Nigeria`,
+      h => `${h}. Rate the government's handling of this situation: 1 (terrible) to 10 (excellent). Be honest. #NigerianPolitics`,
+    ],
+    question: [
+      h => `${h}. If you were in charge, what would you do differently? Serious answers only. #Nigeria`,
+      h => `${h}. Quick poll — does this surprise you? A) Yes completely B) No, typical Nigeria C) Waiting to see what happens. #NaijaTwitter`,
+      h => `${h}. Tag a Nigerian who needs to see this. This affects all of us. #Nigeria`,
+    ],
+    informative: [
+      h => `${h}. Three questions Nigerians should be asking right now: (1) Why? (2) Who benefits? (3) What happens next? #Nigeria`,
+    ],
+  },
+  news: {
+    informative: [
+      h => `BREAKING: ${h}. Developing story — following closely. #NigeriaNews #BreakingNews`,
+      h => `JUST IN: ${h}. More details emerging. This is one to watch. #NaijaNews #Nigeria`,
+      h => `NEWS ALERT: ${h}. Here's the quick summary and what it means for ordinary Nigerians. #NigeriaNews`,
+      h => `UPDATE: ${h}. If you haven't seen this yet — read carefully. This matters. #NaijaNews`,
+      h => `TODAY IN NIGERIA: ${h}. Stay informed. Share with people who need to know. #NigeriaNews`,
+    ],
+    sharp: [
+      h => `${h}. I'm watching this story very closely. You should too. #NigeriaNews`,
+      h => `${h}. This is the kind of story mainstream media will bury by tomorrow. Screenshot and save. #NaijaNews`,
+    ],
+  },
+  random: {},
+};
+
+const STANDALONE = {
+  political: [
+    "The National Assembly keeps increasing their own allowances while voting against minimum wage increases. The irony is painful. #NigerianPolitics",
+    "We keep electing the same recycled faces every 4 years and expecting different results. That is literally the definition of madness. #NigeriaDecides",
+    "Name one Nigerian governor who has actually transformed their state. I am genuinely asking. #NaijaTwitter",
+    "Nigeria has produced more billionaires from government positions than from any private sector innovation. That tells you everything. #Nigeria",
+    "Every Nigerian election cycle: New faces, same agenda, same results, same excuses. The template never changes. #NigerianPolitics",
+  ],
+  economy: [
+    "Your ₦100,000 salary today buys what ₦30,000 bought in 2019. That is the inflation story nobody is properly telling. #NairaWatch",
+    "If you are still depending on ONE source of income in Nigeria 2025, you are one policy change away from crisis. Build multiple streams now. #NigeriaYouth",
+    "The naira has lost over 70% of its value in 3 years. This is not normal. This is not acceptable. This needs to change. #CBN #Nigeria",
+    "Small business owners in Nigeria are the real heroes. No steady light, no stable forex, no government support — still showing up daily. #NigerianBusiness",
+    "A country where importing generators is more profitable than building power plants has its priorities completely wrong. #Nigeria",
+  ],
+  opinion: [
+    "Hot take: Nigeria's problem is not lack of money. It is lack of systems, accountability and consequence for failure. #Nigeria",
+    "Unpopular: The average Nigerian is more loyal to tribe and religion than to good governance. Until that changes, we will keep recycling bad leaders. #NaijaTwitter",
+    "The Japa wave is not a brain drain problem. It is a governance failure symptom. Fix governance, people will want to stay. #Japa #Nigeria",
+    "Nigeria has every resource to be a world power. What we lack is the political will to distribute opportunity fairly. #Nigeria",
+    "Hot take: We deserve better leaders because we are better people. Stop accepting less. #NigerianTwitter",
+  ],
+  engagement: [
+    "Name ONE government promise from 2023 elections that has been fully delivered. Just one. I will wait. #Nigeria",
+    "Be completely honest: Are you financially better off today than you were 24 months ago? Yes or No only. #NigerianEconomy",
+    "If you had 90 days as Nigeria's president with full powers — what is the FIRST thing you would fix? #Nigeria",
+    "What is the most embarrassing thing about Nigeria that we have normalized as a society? Drop it below. #NaijaTwitter",
+    "Retweet if you believe Nigeria can become a truly great nation in your lifetime. Like if you have given up hope. Let us see. #Nigeria",
+  ],
+};
+
+let niche = 'political';
+let tone = 'sharp';
+let currentTopic = null;
+let currentSource = null;
+let queue = JSON.parse(localStorage.getItem('nze_queue') || '[]');
+let genCount = parseInt(localStorage.getItem('nze_gen') || '0');
+let copyCount = parseInt(localStorage.getItem('nze_copy') || '0');
+let allNews = [];
+let activeSource = 'all';
+let deferredPrompt = null;
+let refreshing = false;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-bar').style.display = 'flex';
+});
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(() => {
+      deferredPrompt = null;
+      document.getElementById('install-bar').style.display = 'none';
+    });
+  }
+}
+
+function goTab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'queue') renderQueue();
+}
+
+function setNiche(btn, n) {
+  document.querySelectorAll('.niche-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  niche = n;
+}
+
+function setTone(btn, t) {
+  document.querySelectorAll('.tone-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tone = t;
+}
+
+function clearTopic() {
+  currentTopic = null;
+  currentSource = null;
+  document.getElementById('topic-bar').classList.remove('show');
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function updateChars() {
+  const len = document.getElementById('editor').value.length;
+  const pct = Math.min(len / 280, 1);
+  const circ = 75.4;
+  document.getElementById('char-arc').style.strokeDashoffset = circ - pct * circ;
+  document.getElementById('char-arc').style.stroke = len > 280 ? 'var(--red)' : len > 240 ? 'var(--gold)' : 'var(--blue)';
+  document.getElementById('char-val').textContent = len > 240 ? (280 - len) : '';
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function buildTweet(n, t, topic) {
+  const actualNiche = n === 'random' ? pick(['political','economy','opinion','engagement','news']) : n;
+  const toneTemplates = TWEET_TEMPLATES[actualNiche]?.[t] || TWEET_TEMPLATES[actualNiche]?.['sharp'] || TWEET_TEMPLATES.political.sharp;
+
+  if (topic && toneTemplates.length) {
+    return { text: pick(toneTemplates)(topic), cat: actualNiche };
+  }
+
+  const pool = STANDALONE[actualNiche] || STANDALONE.political;
+  return { text: pick(pool), cat: actualNiche };
+}
+
+function generateOne() {
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  document.getElementById('gen-ico').innerHTML = '<span class="spinner"></span>';
+
+  setTimeout(() => {
+    const result = buildTweet(niche, tone, currentTopic);
+    document.getElementById('editor').value = result.text;
+    updateChars();
+    genCount++;
+    localStorage.setItem('nze_gen', genCount);
+    document.getElementById('sq-gen').textContent = genCount;
+    btn.disabled = false;
+    document.getElementById('gen-ico').textContent = '⚡';
+  }, 500);
+}
+
+function generateBatch() {
+  const btn = document.getElementById('batch-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating 10 tweets...';
+
+  setTimeout(() => {
+    const niches = ['political','economy','opinion','engagement','news','political','economy','opinion','random','random'];
+    const tones = ['sharp','outrage','analytical','sarcastic','informative','question','sharp','informative','sharp','outrage'];
+    niches.forEach((n, i) => {
+      const t = tones[i] || 'sharp';
+      const result = buildTweet(n, t, currentTopic);
+      queue.unshift({ text: result.text, cat: result.cat, id: Date.now() + i });
+    });
+    genCount += 10;
+    localStorage.setItem('nze_gen', genCount);
+    localStorage.setItem('nze_queue', JSON.stringify(queue));
+    document.getElementById('sq-gen').textContent = genCount;
+    document.getElementById('sq-total').textContent = queue.length;
+    document.getElementById('q-count-tab').textContent = queue.length;
+    renderQueue();
+    toast('10 tweets saved to queue!');
+    btn.disabled = false;
+    btn.textContent = 'Generate 10 at once → auto-save all to queue';
+  }, 700);
+}
+
+function copyEditor() {
+  const val = document.getElementById('editor').value.trim();
+  if (!val) { toast('Generate a tweet first'); return; }
+  copyText(val);
+  copyCount++;
+  localStorage.setItem('nze_copy', copyCount);
+  document.getElementById('sq-copied').textContent = copyCount;
+  toast('Copied! Paste into Twitter now');
+}
+
+function saveOne() {
+  const val = document.getElementById('editor').value.trim();
+  if (!val) { toast('Nothing to save'); return; }
+  queue.unshift({ text: val, cat: niche, id: Date.now() });
+  saveQueue();
+  toast('Saved to queue');
+}
+
+function copyText(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+function copyQItem(id) {
+  const item = queue.find(q => q.id === id);
+  if (!item) return;
+  copyText(item.text);
+  copyCount++;
+  localStorage.setItem('nze_copy', copyCount);
+  document.getElementById('sq-copied').textContent = copyCount;
+  toast('Copied! Paste into Twitter');
+}
+
+function editQItem(id) {
+  const item = queue.find(q => q.id === id);
+  if (!item) return;
+  document.getElementById('editor').value = item.text;
+  updateChars();
+  niche = item.cat;
+  goTab('gen', document.querySelectorAll('.tab')[1]);
+  toast('Loaded into editor');
+}
+
+function deleteQItem(id) {
+  queue = queue.filter(q => q.id !== id);
+  saveQueue();
+  renderQueue();
+}
+
+function clearQueue() {
+  if (!queue.length) { toast('Queue is already empty'); return; }
+  queue = [];
+  saveQueue();
+  renderQueue();
+  toast('Queue cleared');
+}
+
+function saveQueue() {
+  localStorage.setItem('nze_queue', JSON.stringify(queue));
+  document.getElementById('sq-total').textContent = queue.length;
+  document.getElementById('q-count-tab').textContent = queue.length;
+}
+
+function renderQueue() {
+  const el = document.getElementById('queue-list');
+  document.getElementById('sq-total').textContent = queue.length;
+  document.getElementById('sq-gen').textContent = genCount;
+  document.getElementById('sq-copied').textContent = copyCount;
+  if (!queue.length) {
+    el.innerHTML = '<div class="empty-q">Your queue is empty.<br>Generate tweets and save them here.<br>Then copy one by one when posting to Twitter.</div>';
+    return;
+  }
+  el.innerHTML = queue.map(t => `
+    <div class="q-item">
+      <div class="q-text">${t.text}</div>
+      <div class="q-foot">
+        <span class="cat-pill cat-${t.cat}">${t.cat}</span>
+        <div class="q-btns">
+          <button class="q-btn" onclick="editQItem(${t.id})">✏️</button>
+          <button class="q-btn" onclick="copyQItem(${t.id})">📋 Copy</button>
+          <button class="q-btn del" onclick="deleteQItem(${t.id})">🗑</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterSrc(btn, src) {
+  document.querySelectorAll('.src-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  activeSource = src;
+  renderNews(allNews);
+}
+
+function timeAgo(dateStr) {
+  try {
+    const diff = (Date.now() - new Date(dateStr)) / 60000;
+    if (isNaN(diff)) return 'recently';
+    if (diff < 2) return 'just now';
+    if (diff < 60) return Math.floor(diff) + 'm ago';
+    if (diff < 1440) return Math.floor(diff / 60) + 'h ago';
+    return Math.floor(diff / 1440) + 'd ago';
+  } catch(e) { return 'recently'; }
+}
+
+function renderNews(items) {
+  const filtered = activeSource === 'all' ? items : items.filter(i => i.source === activeSource);
+  const el = document.getElementById('news-list');
+  const countEl = document.getElementById('news-count');
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--t2);font-size:14px">No news loaded yet.<br>Tap Refresh to fetch latest headlines.</div>';
+    countEl.style.display = 'none';
+    return;
+  }
+
+  countEl.style.display = 'block';
+  countEl.textContent = filtered.length + ' stories from ' + (activeSource === 'all' ? 'all sources' : activeSource);
+
+  el.innerHTML = filtered.map((item, i) => `
+    <div class="news-card">
+      <div class="nc-top">
+        <span class="nc-source ${item.cls}">${item.source}</span>
+        <span class="nc-time">${item.time}</span>
+      </div>
+      <div class="nc-title">${item.title}</div>
+      <div class="nc-actions">
+        <button class="nc-gen" onclick="genFromNews('${item.title.replace(/'/g,"\\'").replace(/"/g,'\\"')}','${item.source}','sharp')">⚡ Generate tweet</button>
+        <button class="nc-gen-op" onclick="genFromNews('${item.title.replace(/'/g,"\\'").replace(/"/g,'\\"')}','${item.source}','informative')">📰 News update</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function genFromNews(headline, source, forceTone) {
+  currentTopic = headline;
+  currentSource = source;
+  const bar = document.getElementById('topic-bar');
+  document.getElementById('topic-source').textContent = source;
+  document.getElementById('topic-text').textContent = headline.length > 80 ? headline.substring(0,80)+'...' : headline;
+  bar.classList.add('show');
+  if (forceTone) {
+    document.querySelectorAll('.tone-chip').forEach(b => b.classList.remove('active'));
+    const toneBtn = [...document.querySelectorAll('.tone-chip')].find(b => b.textContent.toLowerCase().includes(forceTone === 'informative' ? 'news' : forceTone));
+    if (toneBtn) toneBtn.classList.add('active');
+    tone = forceTone;
+  }
+  goTab('gen', document.querySelectorAll('.tab')[1]);
+  setTimeout(() => generateOne(), 200);
+}
+
+function showSkeletons() {
+  document.getElementById('news-list').innerHTML = [1,2,3,4,5].map(() => `
+    <div class="skel">
+      <div class="skel-line short"></div>
+      <div class="skel-line"></div>
+      <div class="skel-line mid"></div>
+    </div>
+  `).join('');
+}
+
+async function fetchOneSource(src, proxyFn) {
+  const res = await fetch(proxyFn(src.url), { signal: AbortSignal.timeout(7000) });
+  let xmlText = '';
+
+  if (src.url.includes('allorigins') || proxyFn === PROXIES[0]) {
+    const json = await res.json();
+    xmlText = json.contents;
+  } else {
+    xmlText = await res.text();
+  }
+
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, 'text/xml');
+  const items = Array.from(xml.querySelectorAll('item')).slice(0, 8);
+
+  return items.map(item => ({
+    source: src.name,
+    cls: src.cls,
+    title: item.querySelector('title')?.textContent?.replace(/<!\[CDATA\[|\]\]>/g,'').replace(/<[^>]+>/g,'').trim() || '',
+    time: timeAgo(item.querySelector('pubDate')?.textContent || ''),
+    ts: new Date(item.querySelector('pubDate')?.textContent || Date.now()).getTime(),
+  })).filter(i => i.title.length > 10);
+}
+
+async function fetchNews() {
+  if (refreshing) return;
+  refreshing = true;
+  const icon = document.getElementById('refresh-icon');
+  icon.className = 'spin';
+  icon.textContent = '↻';
+  document.getElementById('last-refresh').textContent = 'Fetching latest headlines...';
+  showSkeletons();
+
+  allNews = [];
+  const promises = SOURCES.map(async src => {
+    for (const proxyFn of PROXIES) {
+      try {
+        const items = await fetchOneSource(src, proxyFn);
+        if (items.length) return items;
+      } catch(e) { continue; }
+    }
+    return [];
+  });
+
+  const results = await Promise.allSettled(promises);
+  results.forEach(r => { if (r.status === 'fulfilled') allNews.push(...r.value); });
+  allNews.sort((a,b) => b.ts - a.ts);
+
+  if (!allNews.length) {
+    allNews = [
+      {source:'Punch',cls:'src-punch',title:'Federal Government announces new economic reform package targeting inflation',time:'1h ago',ts:Date.now()-3600000},
+      {source:'Vanguard',cls:'src-vanguard',title:'CBN Governor speaks on naira stability and forex allocation policy',time:'2h ago',ts:Date.now()-7200000},
+      {source:'BBC Naija',cls:'src-bbc',title:'Nigerian lawmakers debate controversial bill on national security',time:'3h ago',ts:Date.now()-10800000},
+      {source:'Channels',cls:'src-channels',title:'Lagos State announces new infrastructure project worth billions',time:'4h ago',ts:Date.now()-14400000},
+      {source:'Guardian',cls:'src-guardian',title:'ASUU raises alarm over conditions in Nigerian public universities',time:'5h ago',ts:Date.now()-18000000},
+      {source:'ThisDay',cls:'src-thisday',title:'Presidential aide addresses rising cost of living concerns',time:'6h ago',ts:Date.now()-21600000},
+    ];
+    document.getElementById('last-refresh').textContent = 'Sample news — check your connection';
+    toast('Tip: Check your internet connection for live news');
+  } else {
+    const now = new Date().toLocaleTimeString('en-NG', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('last-refresh').textContent = `${allNews.length} stories — updated ${now}`;
+    toast(`${allNews.length} fresh stories loaded!`);
+  }
+
+  renderNews(allNews);
+  icon.className = '';
+  icon.textContent = '↻';
+  refreshing = false;
+}
+
+document.getElementById('sq-gen').textContent = genCount;
+document.getElementById('sq-copied').textContent = copyCount;
+document.getElementById('q-count-tab').textContent = queue.length;
+renderQueue();
+fetchNews();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
